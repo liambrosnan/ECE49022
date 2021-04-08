@@ -1,0 +1,22 @@
+ {
+  "name": "Easy IoT with CC1101 - Sub-1GHz LORA-like",
+  "keywords": "iot, esp8266, esp32, avr, cc1101, communication, transmit, receive, frequency, mesh",
+  "description": "An easy to use library to send and receive messages between devices using the Texas Instruments CC1101 Low-Power Sub-1GHz RF Transceiver",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrfaptastic/Easy-IoT-Arduino-CC1101-LORA.git"
+  },
+  "authors": {
+    "name": "Faptastic",
+    "url": "https://github.com/mrfaptastic/"
+  },
+  "version": "1.0.4",
+  "frameworks": "arduino",
+  "platforms": "*",
+  "examples": [
+
+    "examples/Simple_TX_and_RX/*.ino",
+    "examples/AES_TX_and_RX/*.ino",
+	
+  ]
+}

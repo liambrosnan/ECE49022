@@ -11,6 +11,9 @@ int distance;
 
 const int statusClosedLower = 33;     // arbitrary low distance
 const int statusClosedHigher = 42;    // arbitrary high distance
+
+// Prompt user for distance to door: lower = dist - 5, higher = dist + 5
+
 int doorStatus = 0;
 int count = 0;
 int statusChange = 0;

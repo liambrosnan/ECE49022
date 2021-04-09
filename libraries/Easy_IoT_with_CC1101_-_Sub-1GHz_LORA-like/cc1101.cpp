@@ -1,9 +1,11 @@
 #include "cc1101.h"
 
+SPIClass spiH(HSPI);
+
 // Do we want the inbuild led to flash when we send or recieve? Useful for diagnostics.
 // Comment the below line out to turn this off.
-#define ENABLE_BUILTIN_LED 1
-#define serialDebug 1
+//#define ENABLE_BUILTIN_LED 1
+//#define serialDebug 1
 
 
 // What debug and internal workings information do we want to output to Serial for debug or monitoring purposes?
@@ -19,11 +21,12 @@
 /**
    Macros
 */
-// Select (SPI) CC1101
+//SAM potential issues, replace defs with known pins?
+// Select (spiH) CC1101
 #define cc1101_Select()  digitalWrite(SS, LOW)
-// Deselect (SPI) CC1101
+// Deselect (spiH) CC1101
 #define cc1101_Deselect()  digitalWrite(SS, HIGH)
-// Wait until SPI MISO line goes low
+// Wait until spiH MISO line goes low
 #define wait_Miso()  while(digitalRead(MISO)>0)
 // Get GDO0 pin state
 #define getGDO0state()  digitalRead(CC1101_GDO0_interrupt_pin)
@@ -80,7 +83,7 @@ CC1101::CC1101(void)
   // for longer than one packet messages
   memset(stream_multi_pkt_buffer, 0x00, sizeof(stream_multi_pkt_buffer)); // flush
 
-  // State of CC as told by the CC from the returned status byte from each SPI write transfer
+  // State of CC as told by the CC from the returned status byte from each spiH write transfer
   currentState = STATE_UNKNOWN;
 
   last_CCState_check = millis();
@@ -93,14 +96,14 @@ void CC1101::configureGPIO(void)
 #ifdef ESP32
   pinMode(SS, OUTPUT);                       // Make sure that the SS Pin is declared as an Output
 #endif
-  SPI.begin();
+  spiH.begin(14,12,13,15);
 
 #if defined(ESP32) || defined(ESP8266)
-  // Initialize SPI interface
-  SPI.setFrequency(400000);
+  // Initialize spiHH interface
+  spiH.setFrequency(400000);
 #endif
 
-  pinMode(CC1101_GDO0_interrupt_pin, INPUT);          // Config GDO0 as input
+  //pinMode(CC1101_GDO0_interrupt_pin, INPUT);          // Config GDO0 as input
 
 #ifdef ENABLE_BUILTIN_LED
   //pinMode(LED_PIN, OUTPUT);         // Led will flash on recieve and send of packet
@@ -195,8 +198,8 @@ bool CC1101::checkCC(void)
 
     setPowerDownState();
 
-    // Close the SPI connection
-    SPI.end();
+    // Close the spiH connection
+    spiH.end();
 
     // ALERT
 #ifdef ENABLE_BUILTIN_LED
@@ -271,7 +274,7 @@ void CC1101::wakeUp(void)
 /**
    writeReg
 
-   Write single register into the CC1101 IC via SPI
+   Write single register into the CC1101 IC via spiH
 
    'regAddr'  Register address
    'value'  Value to be writen
@@ -307,10 +310,10 @@ void CC1101::writeReg(byte regAddr, byte value)
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
 
-  readCCStatus(SPI.transfer(regAddr));  // Send register address
+  readCCStatus(spiH.transfer(regAddr));  // Send register address
   //delayMicroseconds(1);   // HACK
   _NOP(); _NOP(); _NOP(); _NOP();  _NOP(); _NOP(); _NOP(); _NOP(); _NOP();   // HACK2
-  readCCStatus(SPI.transfer(value));    // Send value
+  readCCStatus(spiH.transfer(value));    // Send value
 
   cc1101_Deselect();                    // Deselect CC1101
   delay(1);
@@ -324,7 +327,7 @@ void CC1101::writeReg(byte regAddr, byte value)
 /**
    cmdStrobe
 
-   Send command strobe to the CC1101 IC via SPI
+   Send command strobe to the CC1101 IC via spiH
 
    'cmd'  Command strobe
 */
@@ -355,14 +358,14 @@ void CC1101::cmdStrobe(byte cmd)
 
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
-  readCCStatus(SPI.transfer(cmd));                    // Send strobe command
+  readCCStatus(spiH.transfer(cmd));                    // Send strobe command
   cc1101_Deselect();                    // Deselect CC1101
 }
 
 /**
    readReg
 
-   Read CC1101 register via SPI
+   Read CC1101 register via spiH
 
    'regAddr'  Register address
    'regType'  Type of register: CC1101_CONFIG_REGISTER or CC1101_STATUS_REGISTER
@@ -377,10 +380,10 @@ byte CC1101::readReg(byte regAddr, byte regType)
   addr = regAddr | regType;
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
-  SPI.transfer(addr);                   // Send register address
+  spiH.transfer(addr);                   // Send register address
   delayMicroseconds(1);  // HACK
   _NOP(); _NOP(); _NOP(); _NOP();_NOP(); _NOP(); _NOP(); _NOP();_NOP(); _NOP(); _NOP(); _NOP();_NOP(); _NOP(); _NOP(); _NOP(); // HACK2
-  val = SPI.transfer(0x00);             // Read result
+  val = spiH.transfer(0x00);             // Read result
   cc1101_Deselect();                    // Deselect CC1101
 
   return val;
@@ -390,7 +393,7 @@ byte CC1101::readReg(byte regAddr, byte regType)
 /**
  *
  * readStatusRegSafe(uint8_t regAddr)
- *  CC1101 bug with SPI and return values of Status Registers
+ *  CC1101 bug with spiH and return values of Status Registers
  *  https://e2e.ti.com/support/wireless-connectivity/sub-1-ghz/f/156/t/570498?CC1101-stuck-waiting-for-CC1101-to-bring-GDO0-low-with-IOCFG0-0x06-why-#
  *  as per: http://e2e.ti.com/support/wireless-connectivity/other-wireless/f/667/t/334528?CC1101-Random-RX-FIFO-Overflow
  *
@@ -443,7 +446,7 @@ void CC1101::softReset(void)
 {
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
-  SPI.transfer(CC1101_SRES);            // Send reset command strobe
+  spiH.transfer(CC1101_SRES);            // Send reset command strobe
   wait_Miso();                          // Wait until MISO goes low
   cc1101_Deselect();                    // Deselect CC1101
 
@@ -1395,7 +1398,7 @@ byte CC1101::receivePacket(CCPACKET * packet) //if RF package received
 
     // Copy contents of FIFO in the buffer from CC1101
     memset(cc1101_rx_tx_fifo_buff, 0x00, sizeof(cc1101_rx_tx_fifo_buff)); // flush the temporary array.
-//    readBurstReg(cc1101_rx_tx_fifo_buff, CC1101_RXFIFO, 63); // Can't use readburst due to bizzare SPI issues
+//    readBurstReg(cc1101_rx_tx_fifo_buff, CC1101_RXFIFO, 63); // Can't use readburst due to bizzare spiH issues
 
     // Copy contents of FIFO in the buffer from CC1101 one byte at a time
     for (int i = 0; i< CCPACKET_REC_SIZE; i++)
@@ -1701,7 +1704,7 @@ bool CC1101::printCConfigCheck(void)
 } // end printCConfigCheck
 
 /**
-	Read the ChipCon Status Byte returned as a by-product of SPI communications.
+	Read the ChipCon Status Byte returned as a by-product of spiH communications.
 	Not quite sure this is reliable however.
 */
 void CC1101::readCCStatus(byte status)
@@ -1709,7 +1712,7 @@ void CC1101::readCCStatus(byte status)
   /*
        10.1 Chip Status Byte
         When the header byte, data byte, or command
-        strobe is sent on the SPI interface, the chip
+        strobe is sent on the spiH interface, the chip
         status byte is sent by the CC1101 on the SO pin.
         The status byte contains key status signals,
         useful for the MCU. The first bit, s7, is the
@@ -1752,14 +1755,14 @@ void CC1101::readCCStatus(byte status)
   if ( !(0b01000000 & status) == 0x00) // is bit 7 0 (low)
   {
     if (serialDebug)
-      Serial.println(F("SPI Result: FAIL: CHIP_RDY is LOW! The CC1101 isn't happy. Has a over/underflow occured?"));
+      Serial.println(F("spiH Result: FAIL: CHIP_RDY is LOW! The CC1101 isn't happy. Has a over/underflow occured?"));
   }
 
   if (serialDebug)
   {
       printCCState();
 
-      Serial.print(F("SPI Result: Bytes free in FIFO: "));
+      Serial.print(F("spiH Result: Bytes free in FIFO: "));
       Serial.println( (0b00001111 & status), DEC); // Only the first three bytes matter
   }
 }
@@ -1849,10 +1852,10 @@ void CC1101::printMarcstate(void)
 /**
    writeBurstReg
 
-   Write multiple registers into the CC1101 IC via SPI
+   Write multiple registers into the CC1101 IC via spiH
 
    BUG: Doesn't seem to work when writing to configuration registers
-        Breaks the CC1101. Might be ESP SPI issue.
+        Breaks the CC1101. Might be ESP spiH issue.
 
    'regAddr'  Register address
    'buffer' Data to be writen
@@ -1871,10 +1874,10 @@ void CC1101::writeBurstReg(byte regAddr, byte* buffer, byte len)
   addr = regAddr | WRITE_BURST;         // Enable burst transfer
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
-  SPI.transfer(addr);                   // Send register address
+  spiH.transfer(addr);                   // Send register address
 
   for (i = 0 ; i < len ; i++)
-    SPI.transfer(buffer[i]);            // Send values
+    spiH.transfer(buffer[i]);            // Send values
 
   cc1101_Deselect();                    // Deselect CC1101
 }
@@ -1884,13 +1887,13 @@ void CC1101::writeBurstReg(byte regAddr, byte* buffer, byte len)
 /**
    readBurstReg
 
-   Read burst data from CC1101 via SPI
+   Read burst data from CC1101 via spiH
 
    'buffer' Buffer where to copy the result to
    'regAddr'  Register address
    'len'  Data length
 
-   BUG: Not reliable on ESP8266. SPI timing issues.
+   BUG: Not reliable on ESP8266. spiH timing issues.
 */
 /*
 void CC1101::readBurstReg(byte * buffer, byte regAddr, byte len)
@@ -1905,9 +1908,9 @@ void CC1101::readBurstReg(byte * buffer, byte regAddr, byte len)
   addr = regAddr | READ_BURST;
   cc1101_Select();                      // Select CC1101
   wait_Miso();                          // Wait until MISO goes low
-  SPI.transfer(addr);                   // Send register address
+  spiH.transfer(addr);                   // Send register address
   for (i = 0 ; i < len ; i++)
-    buffer[i] = SPI.transfer(0x00);     // Read result byte by byte
+    buffer[i] = spiH.transfer(0x00);     // Read result byte by byte
   cc1101_Deselect();                    // Deselect CC1101
 
   if (serialDebug)

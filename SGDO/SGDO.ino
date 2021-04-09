@@ -1,5 +1,6 @@
 #include "DoorControls.h"
 #include "DistanceSensor.h"
+#include "ESP32_ARDUCAM.h"
 
 bool userDoorRequest = false;
 int fixedCode = 256;
@@ -20,5 +21,11 @@ void loop() {
     changeDoorState(fixedCode);
     userDoorRequest = false;
   }
+  pollCam(); //blocking, cannot poll cam.
+  /* Potential fix:
+   * set a timer/interrupt to poll door status. On state change, send data to webapp.
+   * set interrupt for requests from webapp to either start/stop camera or change door state
+   * how do make interrupts go do working for esp in cpp? what does?
+   */
 
 }

@@ -1,0 +1,34 @@
+<form action="action_page.php" method="post">
+
+  <style>
+    title {text-align: center;}
+    h1 {text-align: center;}
+    h2 {text-align: center;}
+    div {text-align: center;}
+</style>
+
+<meta charset="utf-8">
+<div class="container">
+<script>
+function storeLogin() {
+
+}
+</script>
+    <h1>Login</h1>
+      <p>Please enter your credentials to login.</p>
+
+    <label for="uname"><b>Email</b></label>
+    <input type="text" placeholder="Enter Email" name="uname" required>
+
+    <label for="psw"><b>Password</b></label>
+    <input type="password" placeholder="Enter Password" name="psw" required>
+
+    <form method="post" action="/menu">
+    <button type="button" onclick="window.location.href='menu';">Login</button>
+    </form>
+    
+    <label>
+      <input type="checkbox" checked="checked" name="remember"> Remember me
+    </label>
+  </div>
+</form> 

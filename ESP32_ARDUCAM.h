@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <SPI.h>
-//#include <WiFi.h>
 #include <WiFiManager.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>

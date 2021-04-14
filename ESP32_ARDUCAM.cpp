@@ -18,7 +18,7 @@ unsigned long lastTrigger = 0;
 boolean startTimer = false;
 /////////////////////////////////////////////////////////////////////
 
-WebServer server(80);
+WebServer server(81);
 ArduCAM myCAM(OV2640, CS);
 
 static const size_t bufferSize = 4096;
@@ -105,14 +105,17 @@ void camCapture(ArduCAM myCAM){
 
 void serverStream(){
     WiFiClient client = server.client();
-
+ 
     String response = "HTTP/1.1 200 OK\r\n";
     response += "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n";
     server.sendContent(response);
 
     int count = 0;
-    while (1){
-     
+    //while (1){
+    unsigned long startTime = millis();
+    unsigned long endTime = millis();
+    while (client.connected() & ((endTime - startTime) / 1000 < 30)) {
+        endTime = millis();
         start_capture();
         unsigned long startCapture = millis();
         while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));
@@ -174,15 +177,25 @@ void serverStream(){
             }
         }
         if (!client.connected()) break;
+
+        // Calculate FPS
         unsigned long endCapture = millis();
-        float frameRate = 1000 / (endCapture - startCapture);
+        int frameRate = 1000 / (endCapture - startCapture);
         count++;
-        if(count > 20) {
-          Serial.print("frameRate = ");
+        //if(count > 20) {
+        if(count > 40 & frameRate > 14) {
+          Serial.print("FPS = ");
           Serial.println(frameRate);
           count = 0;
         }
         
+        /*String numFrames = String(frameRate);
+        response = "Content-Type: text/html; charset=UTF-8";
+        response += numFrames;
+        server.sendContent(response);
+        String message = "<div><h3>FPS: " + numFrames + "</h3></div> \n";
+        server.send(200, "text/html", message);
+        */
     }
 }
 
@@ -203,15 +216,16 @@ void serverHome() {
   String message = "<html><head>\n";
   message += "</head><body>\n";
   //message += "<form action=\"http://" + ipStr + "/submit\" method=\"POST\">";
-  message += "<h1>Garage Door Live Feed</h1>\n";
+  message += "<h1 style=\"font-size:11px\">Garage Door Live Feed</h1>\n";
   //if (errMsg != "")
   //  message += "<div style=\"color:red\">" + errMsg + "</div>";
 
 
   if (imgMode == 0) // stream mode
   {
-    message += "<div><h2>Video Streaming</h2></div> \n";
-    message += "<div><img id=\"ArduCam\" src=\"http://10.0.10.179/stream\" ></div>\n";
+    //message += "<div><h2>Video Streaming</h2></div> \n";
+    message += "<div><h2 style=\"font-size:11px\">Video Streaming</h2></div> \n";
+    message += "<div><img id=\"ArduCam\" src=\"http://192.168.3.155:81/stream\" ></div>\n";
     //message += "<div><iframe src=\"http://" + ipStr + "/stream\" ></iframe></div>\n";
     //imgMode = 1;
 
@@ -223,7 +237,7 @@ void serverHome() {
   server.send(200, "text/html", message);
 }
 
-void fps(int seconds) {
+/*void fps(int seconds) {
   frameCount ++;
   if ((millis() - lastMillis) > (seconds * 1000)) {
     framesPerSecond = (frameCount / seconds);
@@ -232,7 +246,7 @@ void fps(int seconds) {
     frameCount = 0;
     lastMillis = millis();
   }
-}
+}*/
 
 void setupCam() {
     uint8_t vid, pid;
@@ -270,11 +284,11 @@ void setupCam() {
 
 //Change to JPEG capture mode and initialize the OV2640 module
     myCAM.set_format(JPEG);
-    myCAM.OV2640_set_JPEG_size(OV2640_160x120);
     myCAM.InitCAM();
 
 // Sets the jpeg size of one frame
-    myCAM.OV2640_set_JPEG_size(OV2640_640x480);
+    myCAM.OV2640_set_JPEG_size(OV2640_160x120);
+    //myCAM.OV2640_set_JPEG_size(OV2640_640x480);
     myCAM.clear_fifo_flag();
  //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -286,7 +300,8 @@ void setupCam() {
   //useful to make it all retry or go to sleep
   //in seconds
     wifiManager.setTimeout(180);
-
+    //wifiManager.setAPStaticIPConfig(IPAddress(192,168,3,155), IPAddress(192,168,0,1), IPAddress(255,255,255,0));
+    wifiManager.setSTAStaticIPConfig(IPAddress(192,168,3,155), IPAddress(192,168,0,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
@@ -329,8 +344,6 @@ void pollCam() {
     digitalWrite(led, LOW);
     startTimer = false;
   }
-
-  fps(5);
   
   /*if(startTimer) {
     serverStream();

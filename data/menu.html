@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <style>
+        title {text-align: center;}
+        h1 {text-align: center;}
+        h2 {text-align: center;}
+        div {text-align: center;}
+
+        .button {
+        background-color: #aaaaaa; /* white */
+        border: 1px;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+      
+        }
+
+      .button1 {width: 250px;}
+      .button2 {width: 250px;}
+      .button3 {width: 250px;}
+      .button4 {width: 250px;}
+      .button5 {width: 250px;}
+    </style>
+    
+    <meta charset="utf-8">
+
+    <title>Welcome to Smart Garage Door Opener</title>
+  </head>
+
+  <body>
+    <section id="newsletter">
+        <div class="container">
+
+          <!--<form method="post" action='http://192.168.3.155:81/'>
+            <button class="button button1" onclick="window.location.href='stream';">Turn on Camera</button><br>
+          </form>
+        -->
+        <form method="get" action='http://192.168.3.155:81/'>
+          <button class="button button1" onclick="window.location.href='http://192.168.3.155:81/';">Turn on Camera</button>
+        </form>
+
+          <form method="post" action="/door_control">
+            <button class="button button2" onclick="window.location.href='page3';">Open/Close Door</button>
+          </form>
+
+          <form method="post" action="/monitor_status">
+            <button class="button button3" onclick="window.location.href='page3';">Monitor Status</button>
+          </form>
+
+          <form action='/home'>
+            <button class="button button5">Sign Out</button>
+          </form>      
+        </div>
+
+      </section>
+  </body>
+</html>

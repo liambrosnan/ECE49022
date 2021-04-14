@@ -15,7 +15,7 @@ const int statusClosedLower = 33;     // arbitrary low distance
 const int statusClosedHigher = 42;    // arbitrary high distance
 //const int statusClosedHigher = 400;    // arbitrary high distance
 const int timeSec = 20;
-unsigned long startTime = millis();
+unsigned long currentTime;// = millis();
 unsigned long lastTrig = 0;
 // Prompt user for distance to door: lower = dist - 5, higher = dist + 5
 
@@ -40,9 +40,11 @@ Serial.print("Setup Distance Sensor\n");
     pinMode(echoPin, INPUT);
   // Set echo pin as interrupt, assign interrupt function and set CHANGE mode
   //if(count >= 100) {
-  if(startTime - lastTrig > (timeSec*1000)) {
+  currentTime = millis();
+  if(currentTime - lastTrig > (timeSec*1000)) {
     attachInterrupt(digitalPinToInterrupt(echoPin), pollDistanceSensor, CHANGE);
   }
+  
 }
 
 void pollDistanceSensor(){
